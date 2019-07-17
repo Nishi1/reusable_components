@@ -1,4 +1,6 @@
 # Full Page Calendar
+A full-sized add, edit, delete and drag/drop JavaScript event calendar.
+
  - fullcalendar-4.2.0
 
 
