@@ -1,0 +1,196 @@
+<%= stylesheet_link_tag "/assets/full_calendar/core/main.css" %> 
+<%= stylesheet_link_tag "/assets/full_calendar/daygrid/main.css" %> 
+<%= stylesheet_link_tag "/assets/full_calendar/timegrid/main.css" %> 
+<%= stylesheet_link_tag "/assets/full_calendar/list/main.css" %> 
+<%= javascript_include_tag "/assets/full_calendar/vendor/rrule.js" %>
+<%= javascript_include_tag "/assets/full_calendar/core/main.js" %>
+<%= javascript_include_tag "/assets/full_calendar/interaction/main.js" %>
+<%= javascript_include_tag "/assets/full_calendar/daygrid/main.js" %>
+<%= javascript_include_tag "/assets/full_calendar/timegrid/main.js" %>
+<%= javascript_include_tag "/assets/full_calendar/list/main.js" %>
+<%= javascript_include_tag "/assets/full_calendar/rrule/main.js" %>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {	
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+      plugins: [ 'interaction', 'dayGrid', 'timeGrid' ],
+      header: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek,timeGridDay'
+      },     
+      navLinks: true, // can click day/week names to navigate views
+      selectable: true,
+      selectMirror: true,     
+	  select: function(arg){
+			$('#eventAdd').modal('show');
+			$('.event-name').val("");
+			$('.delete_class').hide();
+			$('#eventAdd').find('strong').text("Add Title");
+			$('.submit_class').text("Add");  
+			$('.submit_class').attr("title","Add");              
+			$('.submit_class').off('click').on('click', function(e){
+				e.preventDefault();                   
+				if($("#event_form").valid()){
+					arg.updated_title = $(".event-name").val();						
+					if(arg.updated_title != undefined && arg.updated_title != ""){	
+						save_update_event(calendar, arg, 'add');							
+					}   
+					$('#eventAdd').modal('hide');
+				}
+			});
+			calendar.unselect();  
+		},     
+		events: "/get_events",
+		eventClick: function(event) {        
+			event_id = event.event.id;
+			console.log(event_id);
+			$('#eventAdd').modal('show');
+			$('.delete_class').show();
+			$('#eventAdd').find('strong').text("Edit Title");
+			$('.submit_class').text("Edit");
+			$('.submit_class').attr("title","Edit");
+			$('#eventAdd').find('.event-name').val(event.event.title);
+			$('.submit_class').off('click').on('click', function(e){
+				e.preventDefault();
+				if($("#event_form").valid()){
+					event = event.event
+					event.updated_title = $('#eventAdd').find('.event-name').val();		    
+					save_update_event(calendar, event, 'update');				
+					$('#eventAdd').modal('hide');
+				}
+			})			
+			$('.delete_class').off('click').on('click', function(e){
+				e.preventDefault();
+				delete_event(calendar, event_id);					
+			})                
+      },
+      editable: true,
+      eventLimit: true,
+      eventDrop: function(info) {		
+		event = info.event
+		event.updated_title = info.event.title;
+		save_update_event(calendar, event, 'update'); 
+	  }	  
+    });
+    calendar.render();    
+	$("#event_form").validate({
+        rules: {
+            'eventName': {
+                required: true,               
+                maxlength: 255
+            }            
+        },
+        messages: {
+            'eventName': {
+                required: "Please enter title",               
+                maxlength: "Title can not be more than 255 characters"
+            }
+        }
+    });    
+  });  
+  function save_update_event(calendar, arg, action) {
+	  var updated_title = arg.updated_title;
+	  var start_date = arg.start;
+	  var end_date = arg.end;
+	  var event_id = "";
+	  if(arg.id != undefined) {
+		 event_id = arg.id
+	  }	 
+	  $.ajax({
+		  url: BASE_URL + "/save_update_event",
+		  type:"post",
+		  data:{ "event_id": event_id, "title": updated_title, "start_date": start_date, "end_date": end_date, "action" : action},
+		  success:function(data){
+			if(data.status == true){			  
+				if(action == "add"){
+					calendar.addEvent({
+						id: data.id,
+						title: updated_title,
+						start: start_date,  
+						end: end_date,
+						//allDay: arg.allDay								
+					})
+				} else {					
+					var event = calendar.getEventById(event_id);				
+					event.setProp('title', updated_title);
+				}						
+			}
+		  }
+     });	  
+  } 
+  
+  function delete_event(calendar, event_id){
+	  if(event_id != '') {		  
+		  $.ajax({
+			  url: BASE_URL + "/delete_event",
+			  type:"post",
+			  data:{ "event_id": event_id },
+			  success:function(data){
+				  if(data.status == true){				  					  
+					var event = calendar.getEventById(event_id);
+					event.remove();									
+				  }
+			  }
+		 });			
+	  }	  
+  }  
+</script>
+<style>
+	#calendar {
+	max-width: 1000px;
+	margin: 0 auto;width:100%;
+	}
+	.fc-time{
+	display : none;
+	}
+	.calender-modal .form-control {
+		border-radius: 0;
+		height: 40px;
+	}
+	.calender-modal label {
+		font-size: 16px;
+	}
+	.calender-modal .form-group{margin-bottom: 0;}
+</style>
+<div class="dashboard-main-section">
+<%= render "layouts/elements/left-menu-dashboard" %>
+<div class="dashboard-page">
+	<div class="wrapper">
+		<section class="loat-left main right-section">
+			<a href="javascript:void(0);" data-target="#sidebar" data-toggle="collapse" class="ham-btn courses-btn"><i class="fa fa-navicon fa-2x py-2 p-1"></i></a>
+			<div class="dashboard-section">
+			   <div id="calendar"></div>	
+			</div>
+		</section>
+	</div>
+</div>
+</div>
+<!-- Event modal start-->
+<div class="modal fade" id="eventAdd" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+		  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title" id="eventAddModalLabel"><strong>Add Title</strong></h4>        
+      </div>
+     <form name="event_form" id="event_form">
+      <div class="modal-body calender-modal"> 
+	  <div class="form-group">
+		  <label class="control-label">Title:</label>
+		  <input type="text" name="eventName" size="20" class="form-control event-name">
+	  </div>
+	  <input type="hidden" name="user_id" id="<%= current_user.id %>">           
+      </div>      
+      <div class="modal-footer">
+		<button type="button" class="btn btn-danger delete_class pull-left" data-dismiss="modal" title="Delete">Delete</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal" title="Close">Close</button>
+        <button type="submit" class="btn btn-primary submit_class" title="Add">Add</button>
+      </div>
+     </form>
+    </div>
+  </div>
+</div>
+<!-- Event modal end-->
