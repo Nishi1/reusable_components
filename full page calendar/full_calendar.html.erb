@@ -10,6 +10,7 @@
 <%= javascript_include_tag "/assets/full_calendar/list/main.js" %>
 <%= javascript_include_tag "/assets/full_calendar/rrule/main.js" %>
 <script>
+  var BASE_URL = '<%=  request.base_url %>';		
   document.addEventListener('DOMContentLoaded', function() {	
     var calendarEl = document.getElementById('calendar');
     var calendar = new FullCalendar.Calendar(calendarEl, {
@@ -41,7 +42,7 @@
 			});
 			calendar.unselect();  
 		},     
-		events: "/get_events",
+		events: "/get_events",  //get_events is the function defined in users_controller.rb and this will return data in json format
 		eventClick: function(event) {        
 			event_id = event.event.id;
 			console.log(event_id);
@@ -98,7 +99,7 @@
 		 event_id = arg.id
 	  }	 
 	  $.ajax({
-		  url: BASE_URL + "/save_update_event",
+		  url: BASE_URL + "/save_update_event",   //save_update_event function is defined in users_controller.rb
 		  type:"post",
 		  data:{ "event_id": event_id, "title": updated_title, "start_date": start_date, "end_date": end_date, "action" : action},
 		  success:function(data){
@@ -123,7 +124,7 @@
   function delete_event(calendar, event_id){
 	  if(event_id != '') {		  
 		  $.ajax({
-			  url: BASE_URL + "/delete_event",
+			  url: BASE_URL + "/delete_event", //delete_event function is defined in users_controller.rb
 			  type:"post",
 			  data:{ "event_id": event_id },
 			  success:function(data){
