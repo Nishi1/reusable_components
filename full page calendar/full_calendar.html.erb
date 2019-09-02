@@ -218,13 +218,14 @@
 		  success:function(data){
 			if(data.status == true){			  
 				if(action == "add"){
-					calendar.addEvent({
-						id: data.id,
-						title: updated_title,
-						start: start_date,  
-						end: end_date,
-						//allDay: arg.allDay								
-					})
+					#calendar.addEvent({
+					#	id: data.id,
+					#	title: updated_title,
+					#	start: start_date,  
+					#	end: end_date,
+					#	//allDay: arg.allDay								
+					#})
+					calendar.refetchEvents();
 				} else {					
 					var event = calendar.getEventById(event_id);				
 					event.setProp('title', updated_title);
